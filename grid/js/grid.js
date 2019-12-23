@@ -1,5 +1,9 @@
-var nrows = 40; // 363 - 323 = 40
-var ncols =  56; // 160 - 104 = 56
+var min_row = 338;
+var max_row = 360; // valore reale di max row = 432,  considero una bounding box piu piccola
+var min_col = 121;
+var max_col = 157; // valore reale 322
+var nrows = max_row - min_row; 
+var ncols =  max_col - min_col; 
 
 var data = new Array();
 var xpos = 1; //starting xpos and ypos at 1 so the stroke will show when we make the grid below
@@ -24,27 +28,32 @@ for (var i = 0; i <= nrows; i++)
         // increment the x position. I.e. move it over by 50 (width variable)
         xpos += width;
     }
+    
 	// reset the x position after a row is complete
     xpos = 1;
     // increment the y position for the next row. Move it down 50 (height variable)
     ypos += height; 
 }
 	
-d3.csv('data/grid.csv', function(csvdata){
+d3.csv('data/grid2.csv', function(csvdata){
 	for (var i = 0; i < csvdata.length; i++)	
 	{
-		row = parseInt(csvdata[i].row) - 323;
-		col = parseInt(csvdata[i].col) - 104;
-			
-		total = parseInt(csvdata[i].total);
-		data[row][col].color = total;
+		row = parseInt(csvdata[i].row);
+		col = parseInt(csvdata[i].col);
+		if(row < max_row && col < max_col)
+		{
+			row = row - min_row;
+			col = col - min_col;
+			total = parseInt(csvdata[i].total);
+			data[row][col].color = total;
+		}
 	}
 	
 //https://github.com/johan/world.geo.json
 d3.json("data/malta.geo.json", function(error, mapdata) {
 
-	w = 600;
-	h = 400;
+	w = 580;
+	h = 500;
 	
 	var color = d3.scale.linear().domain([1,csvdata.length])
   		.range(["white", "blue"])
@@ -109,5 +118,42 @@ d3.json("data/malta.geo.json", function(error, mapdata) {
     	.style("fill", "none")
     	.style("stroke", "#222")
     	.style("stroke-width", "1");
+    	
+    //Append a defs (for definition) element to your SVG
+	var legend = d3.select("#legend")
+    	.append("svg").attr("width",w)
+    	.attr("height",100).attr("transform", "translate(50)").append("g");
+
+	//Append a linearGradient element to the defs and give it a unique id
+	var linearGradient = legend.append("linearGradient")
+    	.attr("id", "linear-gradient");
+    
+    //Horizontal gradient
+	linearGradient
+    	.attr("x1", "0%")
+    	.attr("y1", "0%")
+    	.attr("x2", "100%")
+    	.attr("y2", "0%");
+	    
+	//Set the color for the start (0%)
+	linearGradient.append("stop")
+    	.attr("offset", "0%")
+    	.attr("stop-color", "white"); //light blue
+
+	//Set the color for the end (100%)
+	linearGradient.append("stop")
+    	.attr("offset", "100%")
+    	.attr("stop-color", "blue"); //dark blue
+    
+	//Draw the rectangle and fill with gradient
+	
+	
+	legend.append("rect")
+    	.attr("width", w/2)
+    	.attr("height", 20)
+    	.style("fill", "url(#linear-gradient)");
+    
+    legend.append("text").text("0").attr("color", "black").attr("y", 40).attr("x", 0);
+	legend.append("text").text("21043").attr("color", "black").attr("y", 40).attr("x", w/2 - 10);
  	});
 });
